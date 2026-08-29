@@ -2,36 +2,45 @@ import os
 import json
 
 from dotenv import load_dotenv
-from google import genai
+from openai import OpenAI
 
 
 load_dotenv()
 
-api_key = os.getenv("GEMINI_API_KEY")
+api_key = os.getenv("OPENROUTER_API_KEY")
 
 if not api_key:
-    raise ValueError("GEMINI_API_KEY is not configured")
+    raise ValueError("OPENROUTER_API_KEY is not configured")
 
 
-client = genai.Client(
+client = OpenAI(
+    base_url="https://openrouter.ai/api/v1",
     api_key=api_key
 )
 
 
-MODEL_NAME = "gemini-3.6-flash"
+MODEL_NAME = "openrouter/free"
 
 
-def call_gemini(prompt):
+def call_ai(prompt):
     try:
-        interaction = client.interactions.create(
+
+        response = client.chat.completions.create(
             model=MODEL_NAME,
-            input=prompt
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]
         )
 
-        return interaction.output_text
+        return response.choices[0].message.content
 
     except Exception as e:
-        print("GEMINI ERROR:", repr(e))
+
+        print("OPENROUTER ERROR:", repr(e))
+
         raise
 
 
@@ -58,7 +67,7 @@ USER QUESTION:
 {question}
 """
 
-    return call_gemini(prompt)
+    return call_ai(prompt)
 
 
 def generate_summary(text):
@@ -82,7 +91,7 @@ PDF CONTENT:
 {text[:20000]}
 """
 
-    return call_gemini(prompt)
+    return call_ai(prompt)
 
 
 def generate_quiz(
@@ -132,9 +141,10 @@ PDF CONTENT:
 {text[:30000]}
 """
 
-    result = call_gemini(prompt).strip()
+    result = call_ai(prompt).strip()
 
     if result.startswith("```"):
+
         result = result.replace("```json", "")
         result = result.replace("```", "")
         result = result.strip()
