@@ -229,12 +229,12 @@ async function askQuestion() {
 
     catch (error) {
 
-        console.error(error);
+    console.error("ASK ERROR:", error);
 
-        answer.textContent =
-            "Unable to connect to AI.";
+    answer.textContent =
+        "AI Error: " + error.message;
 
-    }
+}
 
 }
 
@@ -283,15 +283,14 @@ async function generateSummary() {
             data.summary;
 
     }
+catch (error) {
 
-    catch (error) {
+    console.error("SUMMARY ERROR:", error);
 
-        console.error(error);
+    summary.textContent =
+        "AI Error: " + error.message;
 
-        summary.textContent =
-            "Unable to connect to AI.";
-
-    }
+}
 
 }
 
@@ -359,14 +358,14 @@ async function generateQuiz() {
 
     catch (error) {
 
-        console.error(error);
+    console.error("QUIZ ERROR:", error);
 
-        quiz.innerHTML =
-            `<div class="result-box">
-                Unable to connect to AI.
-            </div>`;
+    quiz.innerHTML =
+        `<div class="result-box">
+            AI Error: ${error.message}
+        </div>`;
 
-    }
+}
 
 }
 
