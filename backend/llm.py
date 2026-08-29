@@ -5,6 +5,10 @@ from dotenv import load_dotenv
 from openai import OpenAI
 
 
+# =========================================================
+# LOAD ENVIRONMENT VARIABLES
+# =========================================================
+
 load_dotenv()
 
 api_key = os.getenv("OPENROUTER_API_KEY")
@@ -12,6 +16,10 @@ api_key = os.getenv("OPENROUTER_API_KEY")
 if not api_key:
     raise ValueError("OPENROUTER_API_KEY is not configured")
 
+
+# =========================================================
+# OPENROUTER CLIENT
+# =========================================================
 
 client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
@@ -22,7 +30,12 @@ client = OpenAI(
 MODEL_NAME = "openrouter/free"
 
 
+# =========================================================
+# COMMON AI FUNCTION
+# =========================================================
+
 def call_ai(prompt):
+
     try:
 
         response = client.chat.completions.create(
@@ -44,6 +57,10 @@ def call_ai(prompt):
         raise
 
 
+# =========================================================
+# ASK QUESTION
+# =========================================================
+
 def generate_answer(question, context):
 
     prompt = f"""
@@ -52,7 +69,7 @@ You are an AI PDF study assistant.
 Answer the user's question using ONLY the information
 provided in the PDF context.
 
-If the answer cannot be found in the context, say:
+If the answer cannot be found in the PDF context, say:
 
 "The answer is not available in the uploaded PDF."
 
@@ -69,6 +86,10 @@ USER QUESTION:
 
     return call_ai(prompt)
 
+
+# =========================================================
+# SUMMARY
+# =========================================================
 
 def generate_summary(text):
 
@@ -93,6 +114,10 @@ PDF CONTENT:
 
     return call_ai(prompt)
 
+
+# =========================================================
+# QUIZ GENERATOR
+# =========================================================
 
 def generate_quiz(
     text,
