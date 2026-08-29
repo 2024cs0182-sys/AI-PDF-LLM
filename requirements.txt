@@ -3,7 +3,7 @@ uvicorn[standard]
 python-multipart
 python-dotenv
 google-genai
-pypdf
+pymupdf
 sentence-transformers
 faiss-cpu
 numpy
