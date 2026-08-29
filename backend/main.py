@@ -1,5 +1,6 @@
 from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 import os
 
 from backend.pdf_processor import extract_text_from_pdf
@@ -23,6 +24,17 @@ app = FastAPI(
 )
 
 
+# Allow the deployed frontend to communicate with this backend.
+# For this assignment, "*" keeps the deployment simple.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
 UPLOAD_FOLDER = "uploads"
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -34,7 +46,6 @@ pdf_text = ""
 
 @app.get("/")
 def home():
-
     return {
         "message": "AI PDF LLM is running successfully!"
     }
@@ -42,7 +53,6 @@ def home():
 
 @app.get("/health")
 def health():
-
     return {
         "status": "healthy"
     }
