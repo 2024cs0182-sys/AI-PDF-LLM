@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>PDFMind AI</title>
+
+    <link rel="stylesheet" href="style.css">
+
+    <link
+        rel="preconnect"
+        href="https://fonts.googleapis.com"
+    >
+
+    <link
+        rel="preconnect"
+        href="https://fonts.gstatic.com"
+        crossorigin
+    >
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet"
+    >
+</head>
+
+<body>
+
+    <!-- NAVBAR -->
+
+    <nav class="navbar">
+
+        <div class="brand">
+
+            <div class="brand-icon">
+                ✦
+            </div>
+
+            <div>
+                <div class="brand-name">
+                    PDFMind
+                </div>
+
+                <div class="brand-subtitle">
+                    AI PDF Intelligence
+                </div>
+            </div>
+
+        </div>
+
+
+        <div class="nav-status">
+
+            <span class="status-dot"></span>
+
+            AI Engine Online
+
+        </div>
+
+    </nav>
+
+
+    <!-- HERO -->
+
+    <section class="hero">
+
+        <div class="hero-badge">
+            ✨ AI-Powered Document Intelligence
+        </div>
+
+        <h1>
+            Understand your PDFs
+            <span>with AI.</span>
+        </h1>
+
+        <p>
+            Upload any PDF and let AI analyze, summarize,
+            answer questions and generate personalized quizzes.
+        </p>
+
+    </section>
+
+
+    <!-- MAIN -->
+
+    <main class="container">
+
+
+        <!-- UPLOAD -->
+
+        <section class="upload-card">
+
+            <div class="section-heading">
+
+                <div>
+
+                    <span class="eyebrow">
+                        STEP 01
+                    </span>
+
+                    <h2>
+                        Upload your document
+                    </h2>
+
+                    <p>
+                        Start by uploading a PDF you want to analyze.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div
+                class="drop-zone"
+                id="dropZone"
+            >
+
+                <div class="upload-icon">
+                    ↑
+                </div>
+
+                <h3>
+                    Drop your PDF here
+                </h3>
+
+                <p>
+                    or click to browse from your computer
+                </p>
+
+                <input
+                    type="file"
+                    id="pdfFile"
+                    accept=".pdf"
+                    hidden
+                >
+
+                <button
+                    class="secondary-button"
+                    onclick="document.getElementById('pdfFile').click()"
+                >
+                    Choose PDF
+                </button>
+
+                <div
+                    class="selected-file"
+                    id="selectedFile"
+                ></div>
+
+            </div>
+
+
+            <button
+                class="primary-button analyze-button"
+                onclick="uploadPDF()"
+            >
+                <span>Analyze PDF</span>
+                <span>→</span>
+            </button>
+
+
+            <div
+                class="upload-status"
+                id="uploadStatus"
+            ></div>
+
+        </section>
+
+
+        <!-- TOOLS -->
+
+        <section class="tools-section">
+
+            <div class="section-heading">
+
+                <span class="eyebrow">
+                    AI TOOLS
+                </span>
+
+                <h2>
+                    Explore your document
+                </h2>
+
+                <p>
+                    Choose how you want to work with your PDF.
+                </p>
+
+            </div>
+
+
+            <div class="tool-grid">
+
+
+                <!-- ASK -->
+
+                <div class="tool-card">
+
+                    <div class="tool-icon purple">
+                        ✦
+                    </div>
+
+                    <div class="tool-content">
+
+                        <h3>
+                            Ask AI
+                        </h3>
+
+                        <p>
+                            Ask questions and get answers directly
+                            from your document.
+                        </p>
+
+                    </div>
+
+
+                    <div class="question-box">
+
+                        <input
+                            type="text"
+                            id="question"
+                            placeholder="Ask something about your PDF..."
+                            onkeydown="if(event.key === 'Enter') askQuestion()"
+                        >
+
+                        <button
+                            onclick="askQuestion()"
+                            class="send-button"
+                        >
+                            →
+                        </button>
+
+                    </div>
+
+
+                    <div
+                        id="answer"
+                        class="result-box"
+                    >
+                        <span class="empty-text">
+                            Your AI answer will appear here.
+                        </span>
+                    </div>
+
+                </div>
+
+
+                <!-- SUMMARY -->
+
+                <div class="tool-card">
+
+                    <div class="tool-icon blue">
+                        ≡
+                    </div>
+
+                    <div class="tool-content">
+
+                        <h3>
+                            Smart Summary
+                        </h3>
+
+                        <p>
+                            Turn long documents into concise,
+                            easy-to-understand summaries.
+                        </p>
+
+                    </div>
+
+
+                    <button
+                        class="outline-button"
+                        onclick="generateSummary()"
+                    >
+                        Generate Summary
+                        <span>→</span>
+                    </button>
+
+
+                    <div
+                        id="summary"
+                        class="result-box"
+                    >
+                        <span class="empty-text">
+                            Your summary will appear here.
+                        </span>
+                    </div>
+
+                </div>
+
+
+                <!-- QUIZ -->
+
+                <div class="tool-card quiz-card">
+
+                    <div class="tool-icon green">
+                        ✓
+                    </div>
+
+                    <div class="tool-content">
+
+                        <h3>
+                            AI Quiz Generator
+                        </h3>
+
+                        <p>
+                            Test your knowledge with questions
+                            generated from your PDF.
+                        </p>
+
+                    </div>
+
+
+                    <div class="quiz-settings">
+
+                        <div>
+
+                            <label>
+                                Questions
+                            </label>
+
+                            <select id="questionCount">
+
+                                <option value="5">
+                                    5
+                                </option>
+
+                                <option value="10" selected>
+                                    10
+                                </option>
+
+                                <option value="15">
+                                    15
+                                </option>
+
+                                <option value="20">
+                                    20
+                                </option>
+
+                            </select>
+
+                        </div>
+
+
+                        <div>
+
+                            <label>
+                                Difficulty
+                            </label>
+
+                            <select id="difficulty">
+
+                                <option value="easy">
+                                    Easy
+                                </option>
+
+                                <option value="medium" selected>
+                                    Medium
+                                </option>
+
+                                <option value="hard">
+                                    Hard
+                                </option>
+
+                            </select>
+
+                        </div>
+
+                    </div>
+
+
+                    <button
+                        class="primary-button"
+                        onclick="generateQuiz()"
+                    >
+                        Generate Quiz
+                        <span>→</span>
+                    </button>
+
+
+                    <div
+                        id="quiz"
+                        class="quiz-container"
+                    ></div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- FOOTER -->
+
+    <footer>
+
+        <div class="footer-brand">
+            PDFMind AI
+        </div>
+
+        <p>
+            Intelligent document analysis powered by AI.
+        </p>
+
+        <span>
+            © 2026 PDFMind
+        </span>
+
+    </footer>
+
+
+    <script src="script.js"></script>
+
+</body>
+
+</html>
