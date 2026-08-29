@@ -19,30 +19,39 @@ from backend.llm import (
 
 app = FastAPI(
     title="AI PDF Analyzer and Quiz Generator",
-    description="LLM-powered PDF analysis and quiz generation system",
+    description="AI-powered PDF analysis, Q&A, summary and quiz generation",
     version="1.0.0"
 )
 
 
-# Allow the deployed frontend to communicate with this backend.
-# For this assignment, "*" keeps the deployment simple.
+# =========================================================
+# CORS
+# =========================================================
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=False,
     allow_methods=["*"],
-    allow_headers=["*"],
+    allow_headers=["*"]
 )
 
+
+# =========================================================
+# GLOBAL VARIABLES
+# =========================================================
 
 UPLOAD_FOLDER = "uploads"
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-
 vector_store = None
 pdf_text = ""
 
+
+# =========================================================
+# HOME
+# =========================================================
 
 @app.get("/")
 def home():
@@ -51,6 +60,10 @@ def home():
     }
 
 
+# =========================================================
+# HEALTH CHECK
+# =========================================================
+
 @app.get("/health")
 def health():
     return {
@@ -58,11 +71,17 @@ def health():
     }
 
 
+# =========================================================
+# UPLOAD PDF
+# =========================================================
+
 @app.post("/upload")
 async def upload_pdf(file: UploadFile = File(...)):
 
-    global vector_store, pdf_text
+    global vector_store
+    global pdf_text
 
+    # Check file type
     if not file.filename.lower().endswith(".pdf"):
 
         return JSONResponse(
@@ -72,58 +91,97 @@ async def upload_pdf(file: UploadFile = File(...)):
             }
         )
 
-    file_path = os.path.join(
-        UPLOAD_FOLDER,
-        file.filename
-    )
+    try:
 
-    contents = await file.read()
+        # Create file path
+        file_path = os.path.join(
+            UPLOAD_FOLDER,
+            file.filename
+        )
 
-    with open(file_path, "wb") as f:
-        f.write(contents)
+        # Read uploaded file
+        contents = await file.read()
 
-    extracted_text = extract_text_from_pdf(
-        file_path
-    )
+        # Save PDF
+        with open(file_path, "wb") as f:
+            f.write(contents)
 
-    pdf_text = extracted_text
+        # Extract text
+        extracted_text = extract_text_from_pdf(
+            file_path
+        )
 
-    chunks = split_text(
-        extracted_text
-    )
+        if not extracted_text.strip():
 
-    if not chunks:
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "error": "No readable text found in PDF"
+                }
+            )
+
+        # Store PDF text
+        pdf_text = extracted_text
+
+        # Split into chunks
+        chunks = split_text(
+            extracted_text
+        )
+
+        if not chunks:
+
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "error": "Unable to create PDF chunks"
+                }
+            )
+
+        # Create embeddings
+        embeddings = create_embeddings(
+            chunks
+        )
+
+        # Determine vector dimension
+        dimension = embeddings.shape[1]
+
+        # Create vector store
+        vector_store = VectorStore(
+            dimension
+        )
+
+        # Add vectors
+        vector_store.add(
+            embeddings,
+            chunks
+        )
+
+        return {
+            "filename": file.filename,
+            "message": "PDF processed successfully",
+            "characters": len(extracted_text),
+            "chunks": len(chunks),
+            "embedding_dimension": dimension
+        }
+
+    except Exception as e:
+
+        print(
+            "UPLOAD ERROR:",
+            repr(e)
+        )
 
         return JSONResponse(
-            status_code=400,
+            status_code=500,
             content={
-                "error": "No readable text found in PDF"
+                "error": str(e)
             }
         )
 
-    embeddings = create_embeddings(
-        chunks
-    )
 
-    dimension = embeddings.shape[1]
-
-    vector_store = VectorStore(
-        dimension
-    )
-
-    vector_store.add(
-        embeddings,
-        chunks
-    )
-
-    return {
-        "filename": file.filename,
-        "message": "PDF processed successfully",
-        "characters": len(extracted_text),
-        "chunks": len(chunks),
-        "embedding_dimension": dimension
-    }
-
+# =========================================================
+# ASK QUESTION
+# =========================================================
 
 @app.post("/ask")
 async def ask_question(question: str):
@@ -139,30 +197,72 @@ async def ask_question(question: str):
             }
         )
 
-    query_embedding = create_query_embedding(
-        question
-    )
+    if not question.strip():
 
-    relevant_chunks = vector_store.search(
-        query_embedding,
-        top_k=3
-    )
+        return JSONResponse(
+            status_code=400,
+            content={
+                "error": "Question cannot be empty"
+            }
+        )
 
-    context = "\n\n".join(
-        relevant_chunks
-    )
+    try:
 
-    answer = generate_answer(
-        question,
-        context
-    )
+        # Convert question to embedding
+        query_embedding = create_query_embedding(
+            question
+        )
 
-    return {
-        "question": question,
-        "answer": answer,
-        "sources_used": len(relevant_chunks)
-    }
+        # Search relevant chunks
+        relevant_chunks = vector_store.search(
+            query_embedding,
+            top_k=3
+        )
 
+        if not relevant_chunks:
+
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "error": "No relevant information found in the PDF"
+                }
+            )
+
+        # Combine chunks
+        context = "\n\n".join(
+            relevant_chunks
+        )
+
+        # Generate AI answer
+        answer = generate_answer(
+            question,
+            context
+        )
+
+        return {
+            "question": question,
+            "answer": answer,
+            "sources_used": len(relevant_chunks)
+        }
+
+    except Exception as e:
+
+        print(
+            "ASK ERROR:",
+            repr(e)
+        )
+
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": str(e)
+            }
+        )
+
+
+# =========================================================
+# SUMMARY
+# =========================================================
 
 @app.post("/summary")
 async def create_summary():
@@ -178,14 +278,34 @@ async def create_summary():
             }
         )
 
-    summary = generate_summary(
-        pdf_text
-    )
+    try:
 
-    return {
-        "summary": summary
-    }
+        summary = generate_summary(
+            pdf_text
+        )
 
+        return {
+            "summary": summary
+        }
+
+    except Exception as e:
+
+        print(
+            "SUMMARY ERROR:",
+            repr(e)
+        )
+
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": str(e)
+            }
+        )
+
+
+# =========================================================
+# QUIZ
+# =========================================================
 
 @app.post("/quiz")
 async def create_quiz(
@@ -204,6 +324,7 @@ async def create_quiz(
             }
         )
 
+    # Validate number
     if number_of_questions < 1 or number_of_questions > 20:
 
         return JSONResponse(
@@ -213,13 +334,16 @@ async def create_quiz(
             }
         )
 
+    # Validate difficulty
     allowed_difficulties = [
         "easy",
         "medium",
         "hard"
     ]
 
-    if difficulty.lower() not in allowed_difficulties:
+    difficulty = difficulty.lower()
+
+    if difficulty not in allowed_difficulties:
 
         return JSONResponse(
             status_code=400,
@@ -228,14 +352,30 @@ async def create_quiz(
             }
         )
 
-    quiz = generate_quiz(
-        pdf_text,
-        number_of_questions,
-        difficulty.lower()
-    )
+    try:
 
-    return {
-        "number_of_questions": len(quiz),
-        "difficulty": difficulty.lower(),
-        "quiz": quiz
-    }
+        quiz = generate_quiz(
+            pdf_text,
+            number_of_questions,
+            difficulty
+        )
+
+        return {
+            "number_of_questions": len(quiz),
+            "difficulty": difficulty,
+            "quiz": quiz
+        }
+
+    except Exception as e:
+
+        print(
+            "QUIZ ERROR:",
+            repr(e)
+        )
+
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": str(e)
+            }
+        )

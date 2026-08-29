@@ -1,7 +1,9 @@
 import os
 import json
+
 from dotenv import load_dotenv
 from google import genai
+
 
 load_dotenv()
 
@@ -10,7 +12,27 @@ api_key = os.getenv("GEMINI_API_KEY")
 if not api_key:
     raise ValueError("GEMINI_API_KEY is not configured")
 
-client = genai.Client(api_key=api_key)
+
+client = genai.Client(
+    api_key=api_key
+)
+
+
+MODEL_NAME = "gemini-3.6-flash"
+
+
+def call_gemini(prompt):
+    try:
+        interaction = client.interactions.create(
+            model=MODEL_NAME,
+            input=prompt
+        )
+
+        return interaction.output_text
+
+    except Exception as e:
+        print("GEMINI ERROR:", repr(e))
+        raise
 
 
 def generate_answer(question, context):
@@ -36,12 +58,7 @@ USER QUESTION:
 {question}
 """
 
-    response = client.models.generate_content(
-        model="gemini-3.6-flash",
-        contents=prompt
-    )
-
-    return response.text
+    return call_gemini(prompt)
 
 
 def generate_summary(text):
@@ -65,21 +82,20 @@ PDF CONTENT:
 {text[:20000]}
 """
 
-    response = client.models.generate_content(
-        model="gemini-3.6-flash",
-        contents=prompt
-    )
-
-    return response.text
+    return call_gemini(prompt)
 
 
-def generate_quiz(text, number_of_questions=10, difficulty="medium"):
+def generate_quiz(
+    text,
+    number_of_questions=10,
+    difficulty="medium"
+):
 
     prompt = f"""
 You are an AI quiz generator.
 
-Create exactly {number_of_questions} multiple-choice
-questions from the provided PDF content.
+Create exactly {number_of_questions}
+multiple-choice questions from the PDF content.
 
 Difficulty: {difficulty}
 
@@ -87,7 +103,7 @@ Each question must have exactly 4 options.
 
 Return ONLY valid JSON.
 
-Use this exact format:
+Use exactly this format:
 
 [
     {{
@@ -116,16 +132,11 @@ PDF CONTENT:
 {text[:30000]}
 """
 
-    response = client.models.generate_content(
-        model="gemini-3.6-flash",
-        contents=prompt
-    )
+    result = call_gemini(prompt).strip()
 
-    quiz_text = response.text.strip()
+    if result.startswith("```"):
+        result = result.replace("```json", "")
+        result = result.replace("```", "")
+        result = result.strip()
 
-    if quiz_text.startswith("```"):
-        quiz_text = quiz_text.replace("```json", "")
-        quiz_text = quiz_text.replace("```", "")
-        quiz_text = quiz_text.strip()
-
-    return json.loads(quiz_text)
+    return json.loads(result)
