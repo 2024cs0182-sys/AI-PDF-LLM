@@ -4,6 +4,5 @@ python-multipart
 python-dotenv
 google-genai
 pymupdf
-sentence-transformers
 faiss-cpu
 numpy
